@@ -63,4 +63,26 @@ export const userApi = {
     await storage.set(STORAGE_KEYS.users, nextUsers);
     return nextUser;
   },
+
+  async adjustCreditScore(userId: string, delta: number): Promise<User> {
+    const users = await this.list();
+    const userIndex = users.findIndex((item) => item.id === userId);
+    if (userIndex === -1) throw new Error('用户不存在');
+    const currentScore = users[userIndex].credit_score;
+    const nextScore = Math.max(0, Math.min(100, currentScore + delta));
+    const nextUser: User = { ...users[userIndex], credit_score: nextScore };
+    const nextUsers = [...users];
+    nextUsers[userIndex] = nextUser;
+    await storage.set(STORAGE_KEYS.users, nextUsers);
+    const currentUserId = await storage.get<string>(STORAGE_KEYS.currentUserId, '');
+    if (currentUserId === userId) {
+      await storage.set(STORAGE_KEYS.currentUserId, currentUserId);
+    }
+    return nextUser;
+  },
+
+  async detail(userId: string): Promise<User | undefined> {
+    const users = await this.list();
+    return users.find((item) => item.id === userId);
+  },
 };
